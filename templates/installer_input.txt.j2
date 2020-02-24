@@ -1,0 +1,7 @@
+{% for option in matlab_installer_options %}
+{{ option }}={{ matlab_installer_options['option'] }}
+{% endfor %}
+
+{% for product in matlab_products %}
+product.{{ product }}
+{% endfor %}

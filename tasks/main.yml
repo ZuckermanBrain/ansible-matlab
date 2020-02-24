@@ -1,2 +1,74 @@
 ---
 # tasks file for app-matlab
+
+- name: Copy the MATLAB install image contents to the host
+  copy:
+    src: "{{ matlab_install }}"
+    dest: "/tmp/{{ matlab_install }}"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy and render the installer input config to the host
+  template:
+    src: installer_input.txt.j2
+    dest: /tmp/installer_input.txt
+    owner: root
+    group: root
+    mode: '0440'
+
+- name: Copy and render the license file on the host
+  template:
+    src: network.lic.j2
+    dest: "{{ matlab_installer_options['licensePath'] }}"
+    owner: root
+    group: root
+    mode: '0440'
+
+# RUN cd /matlab-install \
+#    && ./install -mode silent -inputFile /matlab_installer_input.txt
+- name: Run the MATLAB installer.
+  command:
+    name: "/tmp/{{ matlab_install }}/install -inputFile /tmp/installer_input.txt"
+# I don't think the chdir is actually necessary if you're using a full path.
+# I think chaining cd to the install command is a Dockerism.
+#    chdir: "/tmp/{{ matlab_install }}"
+
+- name: Add a service account for MATLAB.
+  user:
+    name: matlab
+    home: /var/lib/matlab
+    shell: /bin/nologin
+
+- name: Change ownership of the MATLAB directory to the service account.
+  file:
+    path: "{{ matlab_installer_options['destinationFolder'] }}"
+    state: directory
+    recurse: yes
+    owner: matlab
+    group: matlab
+
+- name: Change ownership of the MATLAB license file to the service account.
+  file:
+    path: "{{ matlab_installer_options['licensePath'] }}"
+    state: file
+    owner: matlab
+    group: matlab
+
+- name: Add symlink from MATLAB binary to /usr/local/bin/matlab
+  file:
+    src: "{{ matlab_installer_options['destinationFolder'] }}/matlab"
+    dest: /usr/local/bin/matlab
+    owner: matlab
+    group: matlab
+    state: link
+
+- name: Remove the contents of the MATLAB install image on disk.
+  file:
+    path: "/tmp/{{ matlab_install }}"
+    state: absent
+
+- name: Remove the installer input config
+  file:
+    path: /tmp/installer_input.txt
+    state: absent
