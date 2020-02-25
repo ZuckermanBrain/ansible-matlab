@@ -1,13 +1,49 @@
 ---
 # tasks file for app-matlab
 
+- name: Resolve platform specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        - '{{ ansible_os_family }}.yml'
+        - 'default.yml'
+      paths:
+        - '{{ role_path }}/vars'
+
+- name: Check if MATLAB install image already exists
+  stat:
+    path: "/tmp/{{ matlab_install }}"
+  register: p
+
 - name: Copy the MATLAB install image contents to the host
   copy:
     src: "{{ matlab_install }}"
-    dest: "/tmp/{{ matlab_install }}"
+    dest: "/tmp"
     owner: root
     group: root
     mode: '0755'
+  when: "{{ matlab_nfs_src|default(true, true) }} and not p.stat.exists"
+
+- name: Install NFS client
+  package: 
+    pkg: "{{ matlab_nfs_pkg }}"
+    state: present
+  when: "{{ matlab_nfs_src|default(false, true) }}"
+
+- name: Add NFS mount for MATLAB install image to /etc/fstab
+  mount: 
+    path: "/tmp/{{ matlab_install }}"
+    src: "{{ matlab_nfs_src }}"
+    fstype: nfs 
+    opts: "_netdev,nfsvers=3,tcp,rw,hard,intr,timeo=600,retrans=2,noacl"
+    dump: "0"
+    passno: "2"
+    state: present
+  when: "{{ matlab_nfs_src|default(false, true) }}"
+
+- name: Mount temporary mount for MATLAB
+  command: mount "/tmp/{{ matlab_install }}"
+  when: "{{ matlab_nfs_src|default(false, true) }}"
 
 - name: Copy and render the installer input config to the host
   template:
@@ -16,6 +52,11 @@
     owner: root
     group: root
     mode: '0440'
+
+- name: Ensure that directory holding license file exists
+  file:
+    path: "{{ matlab_installer_options['licensePath'] | dirname }}"
+    state: directory
 
 - name: Copy and render the license file on the host
   template:
@@ -28,8 +69,7 @@
 # RUN cd /matlab-install \
 #    && ./install -mode silent -inputFile /matlab_installer_input.txt
 - name: Run the MATLAB installer.
-  command:
-    name: "/tmp/{{ matlab_install }}/install -inputFile /tmp/installer_input.txt"
+  command: "/tmp/{{ matlab_install }}/install -inputFile /tmp/installer_input.txt"
 # I don't think the chdir is actually necessary if you're using a full path.
 # I think chaining cd to the install command is a Dockerism.
 #    chdir: "/tmp/{{ matlab_install }}"
@@ -72,3 +112,18 @@
   file:
     path: /tmp/installer_input.txt
     state: absent
+
+- name: Unmount temporary mount for MATLAB
+  command: umount "/tmp/{{ matlab_install }}"
+  when: "{{ matlab_nfs_src|default(false, true) }}"
+
+- name: Remove NFS mount for MATLAB install image from /etc/fstab
+  mount: 
+    path: "/tmp/{{ matlab_install }}"
+    src: "{{ matlab_nfs_src }}"
+    fstype: nfs 
+    opts: "_netdev,nfsvers=3,tcp,rw,hard,intr,timeo=600,retrans=2,noacl"
+    dump: "0"
+    passno: "2"
+    state: absent
+  when: "{{ matlab_nfs_src|default(false, true) }}"
