@@ -1,2 +1,37 @@
 ---
 matlab_nfs_pkg: nfs-utils 
+
+# Obtained using the solution outlined here:
+# https://www.mathworks.com/matlabcentral/answers/358052-is-there-a-list-of-matlab-runtime-dependencies
+# Providing an official dependency list is apparently too onerous for Mathworks.
+matlab_prereq_pkgs:
+  - alsa-lib
+  - atk
+  - cairo
+  - fontconfig
+  - GConf2
+  - gdk-pixbuf2
+  - glibc
+  - gnome-vfs2
+  - gstreamer1-plugins-base
+  - gstreamer1
+  - libsndfile
+  - libXcomposite
+  - libXcursor
+  - libXdamage
+  - libXext
+  - libXfixes
+  - libXft
+  - libXi
+  - libXinerama
+  - libXmu
+  - libXrandr
+  - libXrender
+  - libXScrnSaver
+  - libXtst
+  - libXxf86vm
+  - pango
+  - python3
+  - java-latest-openjdk
+  - gcc
+  - gcc-c++

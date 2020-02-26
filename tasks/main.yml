@@ -10,6 +10,24 @@
       paths:
         - '{{ role_path }}/vars'
 
+- name: Add EPEL repo
+  yum:
+    name: epel-release
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Run "apt-get update"
+  apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Install MATLAB dependencies via package manager
+  package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ matlab_prereq_pkgs }}"
+  when: matlab_prereq_pkgs is defined
+
 - name: Check if MATLAB install image already exists
   stat:
     path: "/tmp/{{ matlab_install }}"
@@ -66,13 +84,8 @@
     group: root
     mode: '0440'
 
-# RUN cd /matlab-install \
-#    && ./install -mode silent -inputFile /matlab_installer_input.txt
 - name: Run the MATLAB installer.
   command: "/tmp/{{ matlab_install }}/install -inputFile /tmp/installer_input.txt"
-# I don't think the chdir is actually necessary if you're using a full path.
-# I think chaining cd to the install command is a Dockerism.
-#    chdir: "/tmp/{{ matlab_install }}"
 
 - name: Add a service account for MATLAB.
   user:
@@ -97,7 +110,7 @@
 
 - name: Add symlink from MATLAB binary to /usr/local/bin/matlab
   file:
-    src: "{{ matlab_installer_options['destinationFolder'] }}/matlab"
+    src: "{{ matlab_installer_options['destinationFolder'] }}/bin/matlab"
     dest: /usr/local/bin/matlab
     owner: matlab
     group: matlab
@@ -107,6 +120,7 @@
   file:
     path: "/tmp/{{ matlab_install }}"
     state: absent
+  when: "{{ matlab_nfs_src|default(true, true) }} and not p.stat.exists"
 
 - name: Remove the installer input config
   file:
