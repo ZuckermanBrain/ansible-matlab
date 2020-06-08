@@ -1,38 +1,25 @@
-Role Name
+app-matlab
 =========
 
-A brief description of the role goes here.
+This role performs an automated install of MATLAB on a Linux host.  It can accomplish this either by copying a folder with the extracted contents of an install ISO to the host, or by mounting an NFS mount containing the extracted contents of an ISO image (see [here](https://www.mathworks.com/matlabcentral/answers/316756-how-can-i-obtain-an-offline-installer-for-matlab-without-using-the-download-only-option-in-the-mat) for instructions about creating an offline installer via _7zip_).  It also creates a service user that owns all of the files installed by MATLAB installer.
 
-Requirements
-------------
+For more information about how this role accomplishes a non-interactive installation, see the following links:
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+ * https://www.mathworks.com/help/install/ug/install-noninteractively-silent-installation.html
+ * https://www.mathworks.com/matlabcentral/answers/84-is-there-a-way-to-automate-the-installation-of-matlab
+ * https://www.mathworks.com/matlabcentral/answers/332057-how-to-install-matlab-on-linux-environment-with-no-gui
+
+**Note: This role is not currently set up to add standalone licenses, although it can be adapted to do so.**
 
 Role Variables
 --------------
-
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
-
-Dependencies
-------------
-
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
-
-Example Playbook
-----------------
-
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+`matlab_install` (string) : A relative path to the extracted MATLAB installer ISO within the `files` directory that should be copied to the host if you're not using NFS.  Note that `files` is blacklisted in `.gitignore`.
+`matlab_installer_options` (dict): Installation options based off `installer_input.txt` from the install ISO.  These map isomorphically to the options in `installer_input.txt`.  These should be overriden in a group_vars or host_vars file, since the defaults won't work.
+`matlab_products` (list) : The Mathworks products that the installer should install.  By default this is empty, since the installer will install.  Only define this list if you want to whitelist the installation of certain toolboxes while blocking the installation of all others.
+`matlab_client_network_license` (dict): A dictionary with 3 keys. `fqdn` is the FQDN for the license server, `mac` is the MAC address, and `port` is the port that FLEXnet is listening on.
+`matlab_nfs_src` (string): The host:path combination that points to an NFS mount containing an extracted copy of the MATLAB installer ISO.
 
 License
 -------
 
-BSD
-
-Author Information
-------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Revised 3-Clause BSD License
