@@ -21,17 +21,20 @@
         - 'default.yml'
       paths:
         - '{{ role_path }}/vars'
+  tags: ["matlab_prereqs_only"]
 
 - name: Add EPEL repo
   yum:
     name: epel-release
     state: present
   when: ansible_os_family == "RedHat"
+  tags: ["matlab_prereqs_only"]
 
 - name: Run "apt-get update"
   apt:
     update_cache: yes
   when: ansible_os_family == "Debian"
+  tags: ["matlab_prereqs_only"]
 
 - name: Install MATLAB dependencies via package manager
   package:
@@ -39,6 +42,7 @@
     state: present
   loop: "{{ matlab_prereq_pkgs }}"
   when: matlab_prereq_pkgs is defined
+  tags: ["matlab_prereqs_only"]
 
 - name: Check if MATLAB install image already exists
   stat:
