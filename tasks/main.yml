@@ -56,13 +56,19 @@
     owner: root
     group: root
     mode: '0755'
-  when: "{{ matlab_nfs_src|default(true, true) }} and not p.stat.exists"
+  when: matlab_nfs_src is not defined and not p.stat.exists and not matlab_nfs_client
 
 - name: Install NFS client
   package: 
     pkg: "{{ matlab_nfs_pkg }}"
     state: present
-  when: "{{ matlab_nfs_src|default(false, true) }}"
+  when: matlab_nfs_src is defined and not matlab_nfs_client
+
+- name: Ensure mount ponit exists
+  file:
+    path: "/tmp/{{ matlab_install }}"
+    state: directory
+  when: matlab_nfs_src is defined and not matlab_nfs_client
 
 - name: Add NFS mount for MATLAB install image to /etc/fstab
   mount: 
@@ -73,11 +79,11 @@
     dump: "0"
     passno: "2"
     state: present
-  when: "{{ matlab_nfs_src|default(false, true) }}"
+  when: matlab_nfs_src is defined and not matlab_nfs_client
 
 - name: Mount temporary mount for MATLAB
   command: mount "/tmp/{{ matlab_install }}"
-  when: "{{ matlab_nfs_src|default(false, true) }}"
+  when: matlab_nfs_src is defined and not matlab_nfs_client
 
 - name: Copy and render the installer input config to the host
   template:
@@ -86,6 +92,7 @@
     owner: root
     group: root
     mode: '0440'
+  when: not matlab_nfs_client
 
 - name: Ensure that directory holding license file exists
   file:
@@ -102,6 +109,7 @@
 
 - name: Run the MATLAB installer.
   command: "/tmp/{{ matlab_install }}/install -inputFile /tmp/installer_input.txt"
+  when: not matlab_nfs_client
 
 - name: Add a service account for MATLAB.
   user:
@@ -116,6 +124,7 @@
     recurse: yes
     owner: matlab
     group: matlab
+  when: not matlab_nfs_client
 
 - name: Change ownership of the MATLAB license file to the service account.
   file:
@@ -136,16 +145,17 @@
   file:
     path: "/tmp/{{ matlab_install }}"
     state: absent
-  when: "{{ matlab_nfs_src|default(true, true) }} and not p.stat.exists"
+  when: matlab_nfs_src is not defined and not p.stat.exists and not matlab_nfs_client
 
 - name: Remove the installer input config
   file:
     path: /tmp/installer_input.txt
     state: absent
+  when: not matlab_nfs_client
 
 - name: Unmount temporary mount for MATLAB
   command: umount "/tmp/{{ matlab_install }}"
-  when: "{{ matlab_nfs_src|default(false, true) }}"
+  when: matlab_nfs_src is defined and not matlab_nfs_client
 
 - name: Remove NFS mount for MATLAB install image from /etc/fstab
   mount: 
@@ -156,4 +166,4 @@
     dump: "0"
     passno: "2"
     state: absent
-  when: "{{ matlab_nfs_src|default(false, true) }}"
+  when: matlab_nfs_src is defined and not matlab_nfs_client
