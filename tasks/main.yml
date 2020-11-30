@@ -64,7 +64,7 @@
     state: present
   when: matlab_nfs_src is defined and not matlab_nfs_client
 
-- name: Ensure mount ponit exists
+- name: Ensure mount point exists
   file:
     path: "/tmp/{{ matlab_install }}"
     state: directory
@@ -75,7 +75,7 @@
     path: "/tmp/{{ matlab_install }}"
     src: "{{ matlab_nfs_src }}"
     fstype: nfs 
-    opts: "_netdev,nfsvers=3,tcp,rw,hard,intr,timeo=600,retrans=2,noacl"
+    opts: "_netdev,x-systemd.automount,nfsvers=3,tcp,rw,hard,intr,timeo=600,retrans=2,noacl"
     dump: "0"
     passno: "2"
     state: present
